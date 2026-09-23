@@ -1,0 +1,117 @@
+x-app: &app
+  build: .
+  image: hashtag-tracker:local
+  init: true
+  restart: unless-stopped
+  environment: &env
+    DATABASE_URL: postgres://tracker:tracker@postgres:5432/tracker
+    REDIS_URL: redis://redis:6379
+    MODE: ${MODE:-mock}
+    META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:-}
+    META_USER_ID: ${META_USER_ID:-}
+    META_API_VERSION: ${META_API_VERSION:-v24.0}
+    MOCK_BASE_URL: http://mock-meta:4000
+    STORAGE_ROOT: /data/assets
+    META_PAGE_SIZE: ${META_PAGE_SIZE:-25}
+    SYNC_LIMIT: ${SYNC_LIMIT:-500}
+    ASSET_CONCURRENCY: ${ASSET_CONCURRENCY:-4}
+    MAX_ASSET_BYTES: ${MAX_ASSET_BYTES:-104857600}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+    mock-meta:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: tracker
+      POSTGRES_PASSWORD: tracker
+      POSTGRES_DB: tracker
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U tracker -d tracker']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes', --maxmemory-policy, noeviction]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  mock-meta:
+    build: .
+    image: hashtag-tracker:local
+    init: true
+    command: [node, dist/src/entrypoints/mock.js]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: .
+    image: hashtag-tracker:local
+    command: [node, dist/src/entrypoints/migrate.js]
+    environment:
+      DATABASE_URL: postgres://tracker:tracker@postgres:5432/tracker
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    <<: *app
+    ports: ['127.0.0.1:${PORT:-3000}:3000']
+    volumes: [assets:/data/assets:ro]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  worker:
+    <<: *app
+    command: [node, dist/src/entrypoints/worker.js]
+    volumes: [assets:/data/assets]
+    stop_grace_period: 90s
+  scheduler:
+    <<: *app
+    command: [node, dist/src/entrypoints/schedule.js]
+    restart: 'no'
+  tests:
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgres://tracker:tracker@postgres:5432/tracker_test
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: [sh, -c, 'npm test && npm run test:integration']
+volumes:
+  postgres-data:
+  redis-data:
+  assets:

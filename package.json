@@ -1,0 +1,36 @@
+{
+  "name": "hashtag-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/src/entrypoints/api.js",
+    "worker": "node dist/src/entrypoints/worker.js",
+    "schedule": "node dist/src/entrypoints/schedule.js",
+    "sync": "node dist/src/entrypoints/sync.js",
+    "migrate": "node dist/src/entrypoints/migrate.js",
+    "test": "vitest run --exclude tests/integration.test.ts",
+    "test:integration": "vitest run tests/integration.test.ts",
+    "mock": "node dist/src/entrypoints/mock.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.58.0",
+    "express": "^5.1.0",
+    "knex": "^3.1.0",
+    "pg": "^8.16.0",
+    "pino": "^9.9.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.18.0",
+    "@types/supertest": "^6.0.0",
+    "supertest": "^7.1.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.1"
+  }
+}
