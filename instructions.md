@@ -110,6 +110,6 @@ Tool: OpenAI Codex.
 
 Codex was used to discuss architecture, scaffold the Express/TypeScript implementation, write Knex migrations, add queue/storage adapters, implement a mock provider, write automated tests, and draft setup documentation. It also performed build and test checks documented in `verification.md`.
 
-The candidate chose Knex, a backend-only scope, a Docker-first local setup, and requested modularity and scalability. The candidate installed Docker Desktop and ran the Docker verification script in their own terminal; its 39 passing tests and live-run observations are recorded in `verification.md`. Codex wrote the implementation and tests. No independently authored code or line-by-line candidate review is claimed here; the candidate should add any such work after completing it.
+I chose Knex, a backend-only scope, a Docker-first local setup, and requested modularity and scalability. I installed Docker Desktop and ran the Docker verification script; its 39 passing tests and live-run observations are recorded in `verification.md`. 
 
-A sanitized design-session summary is provided in `ai-usage/session-summary.md`; it is not a verbatim chat export. Do not share the original conversation without redacting the supplied access token. No access token is included in this repository.
+Codex wrote the implementation and tests. 
